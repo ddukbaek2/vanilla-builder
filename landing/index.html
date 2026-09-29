@@ -124,6 +124,7 @@
 				<a href="#how">동작 방식</a>
 				<a href="#platforms">플랫폼</a>
 				<a href="#install">설치</a>
+				<a href="#roadmap">로드맵</a>
 				<a href="#client">클라이언트</a>
 				<a href="https://github.com/ddukbaek2/vanilla-builder">GitHub</a>
 			</nav>
@@ -134,18 +135,18 @@
 		<div class="container">
 			<img class="icon" src="images/icon.png" alt="vanilla-builder 아이콘">
 			<h1>어디서 만들든, 빌드는 원격으로</h1>
-			<p class="lead">웹 빌드 결과물과 명세 파일 하나를 보내면 빌드 서버가 네이티브 앱을 만들어 돌려주는 원격 빌드 애플리케이션입니다. 저장소도, 파이프라인 설정도 필요 없습니다. Windows 에서 작업하고 iOS 앱을 받는 식으로요.</p>
+			<p class="lead">어느 데스크톱 OS 에서나 도는 하나의 앱입니다. 실행한 머신이 곧 빌드 노드가 되고, 웹 빌드 결과물과 명세 파일 하나를 보내면 네이티브 앱을 만들어 돌려줍니다. 저장소도, 파이프라인 설정도 필요 없습니다.</p>
 			<div class="actions">
 				<a class="button primary" href="download/vanilla-builder-macos.zip">
 					<svg viewBox="0 0 24 24"><path d="M12 3a1 1 0 0 1 1 1v9.59l3.3-3.3a1 1 0 1 1 1.4 1.42l-5 5a1 1 0 0 1-1.4 0l-5-5a1 1 0 1 1 1.4-1.42l3.3 3.3V4a1 1 0 0 1 1-1zM5 18a1 1 0 0 1 1 1v1h12v-1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-2a1 1 0 0 1 1-1z"/></svg>
-					빌드 서버 내려받기 (macOS)
+					내려받기 (현재 macOS)
 				</a>
 				<a class="button secondary" href="https://github.com/ddukbaek2/vanilla-builder">
 					<svg viewBox="0 0 24 24"><path d="M12 2a10 10 0 0 0-3.16 19.49c.5.09.68-.22.68-.48v-1.7c-2.78.6-3.37-1.34-3.37-1.34-.45-1.16-1.11-1.47-1.11-1.47-.91-.62.07-.61.07-.61 1 .07 1.53 1.03 1.53 1.03.9 1.53 2.34 1.09 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.56-1.11-4.56-4.94 0-1.09.39-1.98 1.03-2.68-.1-.25-.45-1.27.1-2.64 0 0 .84-.27 2.75 1.02a9.6 9.6 0 0 1 5 0c1.91-1.29 2.75-1.02 2.75-1.02.55 1.37.2 2.39.1 2.64.64.7 1.03 1.59 1.03 2.68 0 3.84-2.34 4.68-4.57 4.93.36.31.68.92.68 1.85v2.74c0 .27.18.58.69.48A10 10 0 0 0 12 2z"/></svg>
 					GitHub 에서 보기
 				</a>
 			</div>
-			<div class="requirements">클라이언트는 Windows · macOS · Linux 어디서나 · 빌드 서버는 현재 macOS (Node.js 22 이상, iOS 빌드에는 Xcode 와 Apple Developer 계정)</div>
+			<div class="requirements">Windows · macOS · Linux 를 목표로 하며, 첫 기준은 macOS 노드입니다 (Node.js 22 이상, iOS 빌드에는 Xcode 와 Apple Developer 계정)</div>
 		</div>
 	</section>
 
@@ -154,12 +155,12 @@
 	<section class="block" id="features">
 		<div class="container">
 			<h2>특징</h2>
-			<p class="sub">Jenkins 의 편한 부분만 남기고, 나머지는 덜어냈습니다.</p>
+			<p class="sub">중앙 자동화 서버가 아니라, 서로 연결되는 빌드 노드입니다.</p>
 			<div class="grid">
 				<div class="card"><div class="glyph">⇪</div><h3>파일만 보내면 됩니다</h3><p>Git 저장소를 연결하지 않습니다. 웹 빌드 결과물과 build-spec.json 을 zip 으로 묶어 보내면 끝입니다.</p></div>
 				<div class="card"><div class="glyph">▤</div><h3>큐와 현황 페이지</h3><p>작업은 순서대로 쌓여 하나씩 돌고, 브라우저에서 단계와 로그를 실시간으로 봅니다. 중간에 취소도 됩니다.</p></div>
 				<div class="card"><div class="glyph">◆</div><h3>네이티브 프로젝트는 서버가</h3><p>프로젝트에 Electron 이나 Capacitor 설정이 없어도 됩니다. 서버가 명세를 읽어 네이티브 프로젝트를 생성하고 빌드합니다.</p></div>
-				<div class="card"><div class="glyph">●</div><h3>상시 실행되는 서버</h3><p>서비스로 등록되어 로그인과 함께 뜨고 죽으면 다시 뜹니다. 상태 표시 아이콘이 있고, 설정은 웹에서 바꿉니다.</p></div>
+				<div class="card"><div class="glyph">●</div><h3>상시 실행되는 노드</h3><p>서비스로 등록되어 로그인과 함께 뜨고 죽으면 다시 뜹니다. 상태 표시 아이콘이 있고, 설정은 웹에서 바꿉니다.</p></div>
 			</div>
 		</div>
 	</section>
@@ -167,11 +168,11 @@
 	<section class="block" id="how">
 		<div class="container">
 			<h2>동작 방식</h2>
-			<p class="sub">작업 PC 와 빌드 서버가 나뉘어 있습니다. 무거운 툴체인은 서버에만 있으면 됩니다.</p>
+			<p class="sub">무거운 툴체인은 그 대상을 만들 수 있는 노드에만 있으면 됩니다.</p>
 			<ol class="steps">
 				<li><h3>웹 빌드</h3><p>작업 PC 에서 <code>npm run build</code> 로 <code>build/web</code> 을 만듭니다.</p></li>
-				<li><h3>보내기</h3><p>클라이언트 도구나 curl, 또는 현황 페이지에 끌어다 놓아 zip 을 빌드 서버에 올립니다.</p></li>
-				<li><h3>받기</h3><p>서버가 네이티브 프로젝트를 생성해 빌드하고, 끝나면 산출물을 내려받습니다.</p></li>
+				<li><h3>보내기</h3><p>클라이언트 도구나 curl, 또는 현황 페이지에 끌어다 놓아 zip 을 빌드 노드에 올립니다.</p></li>
+				<li><h3>받기</h3><p>노드가 네이티브 프로젝트를 생성해 빌드하고, 끝나면 산출물을 내려받습니다.</p></li>
 			</ol>
 		</div>
 	</section>
@@ -179,7 +180,7 @@
 	<section class="block" id="platforms">
 		<div class="container">
 			<h2>대상 플랫폼</h2>
-			<p class="sub">목표는 6종입니다. 빌드 서버가 지금은 macOS 에서 돌기 때문에 Xcode 가 필요한 두 가지부터 준비했습니다.</p>
+			<p class="sub">목표는 6종입니다. 첫 노드가 macOS 라서 Xcode 가 필요한 두 가지부터 준비했습니다.</p>
 			<div class="grid">
 				<div class="card"><h3>macOS <span class="badge ok">지원</span></h3><p>Electron + electron-builder → .dmg</p></div>
 				<div class="card"><h3>iOS <span class="badge ok">지원</span></h3><p>Capacitor + Xcode → 서명된 .ipa</p></div>
@@ -193,8 +194,8 @@
 
 	<section class="block" id="install">
 		<div class="container">
-			<h2>빌드 서버 설치</h2>
-			<p class="sub">빌드를 맡을 머신에서 한 번만 하면 됩니다. 지금은 macOS 용 서버를 제공합니다.</p>
+			<h2>노드 설치</h2>
+			<p class="sub">빌드를 맡을 머신에서 한 번만 하면 됩니다. 지금은 macOS 노드를 제공합니다.</p>
 			<div class="two">
 				<div>
 					<pre><code>unzip vanilla-builder-macos.zip
@@ -215,6 +216,19 @@ sh scripts/install.sh</code></pre>
 					<p class="note"><code>build-spec.json</code> 은 이것이 전부입니다. 필드 설명은 현황 페이지의 도움말에 있습니다.</p>
 				</div>
 			</div>
+		</div>
+	</section>
+
+	<section class="block" id="roadmap">
+		<div class="container">
+			<h2>로드맵</h2>
+			<p class="sub">지금 macOS 인 것은 첫 기준일 뿐입니다.</p>
+			<ol class="steps">
+				<li><h3>macOS 노드</h3><p>지금. macOS·iOS 빌드, 큐, 현황 페이지, 클라이언트 도구.</p></li>
+				<li><h3>Windows · Linux 노드</h3><p>같은 앱이 그 OS 에서 돌고, 그 OS 가 만들 수 있는 대상을 빌드합니다.</p></li>
+				<li><h3>노드 연결</h3><p>내 노드가 못 만드는 대상은 접근 가능한 원격 노드에 넘겨 빌드하고 결과를 받아옵니다.</p></li>
+				<li><h3>릴레이</h3><p>로컬에서 패키징한 것을 원격 노드를 거쳐 다시 빌드시키고, 결과를 다시 로컬로.</p></li>
+			</ol>
 		</div>
 	</section>
 
