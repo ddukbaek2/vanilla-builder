@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>vanilla-builder</title>
+	<link rel="icon" type="image/png" href="/icon.png">
+	<style>
+		:root {
+			--background: #1a1410;
+			--panel: #241c16;
+			--panel-raised: #2f2620;
+			--border: #3f3329;
+			--text: #f3e9d6;
+			--text-muted: #a8967f;
+			--accent: #d9a25f;
+			--accent-soft: rgba(217, 162, 95, 0.16);
+			--danger: #e5684f;
+			--danger-soft: rgba(229, 104, 79, 0.16);
+			--success: #7fd3a5;
+			--warning: #c9975a;
+			--gray: #5c4e42;
+			--font: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Apple SD Gothic Neo", "Helvetica Neue", "Segoe UI", "Malgun Gothic", sans-serif;
+			--mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+			--radius: 12px;
+			--shadow: 0 1px 2px rgba(0, 0, 0, 0.35), 0 8px 24px rgba(0, 0, 0, 0.25);
+		}
+		* { box-sizing: border-box; scrollbar-color: #5c4e42 #1a1410; scrollbar-width: thin; }
+		::-webkit-scrollbar { width: 10px; height: 10px; }
+		::-webkit-scrollbar-track { background: transparent; }
+		::-webkit-scrollbar-thumb { background: #5c4e42; border-radius: 999px; border: 2px solid #1a1410; }
+		::-webkit-scrollbar-thumb:hover { background: #7a6858; }
+		html, body { height: 100%; }
+		body { margin: 0; font-family: var(--font); font-size: 14px; color: var(--text); background: var(--background); display: flex; flex-direction: column; -webkit-font-smoothing: antialiased; letter-spacing: -0.01em; }
+		a { color: var(--accent); text-decoration: none; }
+		a:hover { text-decoration: underline; }
+		button { font: inherit; }
+
+		header { display: flex; align-items: center; gap: 24px; padding: 0 20px; height: 52px; background: rgba(36, 28, 22, 0.85); backdrop-filter: saturate(160%) blur(18px); -webkit-backdrop-filter: saturate(160%) blur(18px); border-bottom: 1px solid var(--border); flex: none; }
+		header .brand { display: flex; align-items: center; gap: 10px; font-size: 16px; font-weight: 600; }
+		header .brand img { width: 28px; height: 28px; border-radius: 7px; }
+		header nav { display: flex; gap: 4px; }
+		header nav a { padding: 6px 14px; border-radius: 999px; color: var(--text-muted); font-weight: 500; transition: background 0.15s, color 0.15s; }
+		header nav a:hover { color: var(--text); text-decoration: none; background: var(--panel-raised); }
+		header nav a.active { color: var(--text); background: var(--accent-soft); }
+		.panel h2 #summary { float: right; font-weight: 400; text-transform: none; letter-spacing: 0; }
+
+		.view { flex: 1; min-height: 0; }
+		.view[hidden] { display: none !important; }
+
+		#jobsView { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; padding: 16px 20px; }
+		.column { display: flex; flex-direction: column; gap: 16px; min-height: 0; }
+		.panel { background: var(--panel); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px 18px; min-width: 0; box-shadow: var(--shadow); }
+		.panel h2 { margin: 0 0 10px; font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.04em; }
+		#jobListPanel { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+		#jobList { list-style: none; margin: 0; padding: 0; overflow: auto; flex: 1; min-height: 0; }
+		#jobList li { display: grid; grid-template-columns: 44px 1fr auto; gap: 10px; align-items: center; padding: 9px 10px; border-radius: 8px; cursor: pointer; transition: background 0.12s; }
+		#jobList li:hover { background: var(--panel-raised); }
+		#jobList li.selected { background: var(--accent-soft); }
+		#jobList .jobNumber { color: var(--text-muted); font-family: var(--mono); font-size: 12px; }
+		#jobList .jobName { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+		#jobList .jobTargets { color: var(--text-muted); font-size: 12px; margin-top: 2px; }
+		#emptyMessage, #detailEmptyMessage { color: var(--text-muted); }
+
+		#dropZone { border: 1px dashed var(--border); border-radius: 10px; padding: 22px 14px; text-align: center; color: var(--text-muted); cursor: pointer; transition: border-color 0.15s, background 0.15s; }
+		#dropZone:hover, #dropZone.active { border-color: var(--accent); background: var(--accent-soft); color: var(--text); }
+		#dropZone strong { display: block; color: var(--text); margin-bottom: 4px; }
+		.sampleLink { margin-top: 10px; font-size: 13px; }
+		.message { margin-top: 8px; font-size: 13px; min-height: 1.2em; }
+		.message.error { color: var(--danger); }
+		.message.ok { color: var(--success); }
+
+		.badge { display: inline-block; padding: 2px 9px; border-radius: 999px; font-size: 12px; font-weight: 500; color: var(--text); background: var(--gray); white-space: nowrap; }
+		.badge.queued, .badge.pending { background: var(--gray); color: var(--text-muted); }
+		.badge.running { background: var(--accent); color: #2a1d10; }
+		.badge.succeeded { background: #2f7a55; }
+		.badge.failed { background: #a43a2a; }
+		.badge.canceled { background: #7a5a2f; }
+		.badge.skipped { background: var(--gray); color: var(--text-muted); }
+
+		#detailPanel { display: flex; flex-direction: column; min-height: 0; }
+		#jobDetail { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+		#jobTitle { margin: 0; font-size: 18px; display: flex; align-items: center; gap: 10px; }
+		#jobMeta { color: var(--text-muted); font-size: 13px; margin: 6px 0 10px; display: flex; flex-wrap: wrap; gap: 4px 16px; }
+		.progress { height: 6px; background: var(--panel-raised); border-radius: 3px; overflow: hidden; margin-bottom: 10px; }
+		#progressBar { height: 100%; width: 0; background: var(--accent); transition: width 0.3s; }
+		#stepList { list-style: none; margin: 0 0 10px; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+		#stepList li { display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: var(--mono); font-size: 12px; background: var(--panel-raised); }
+		.detailRow { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-bottom: 10px; }
+		#jobError { color: var(--danger); font-size: 13px; }
+		#cancelButton { padding: 5px 14px; border: 1px solid var(--danger); background: transparent; color: var(--danger); border-radius: 999px; cursor: pointer; transition: background 0.12s; }
+		#cancelButton:hover { background: var(--danger-soft); }
+		#artifactList { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px; }
+		#artifactList li a { display: inline-block; padding: 4px 12px; border: 1px solid var(--border); border-radius: 999px; background: var(--panel-raised); }
+		#artifactList li a:hover { border-color: var(--accent); text-decoration: none; }
+		#artifactList li.none { color: var(--text-muted); }
+		.logToolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+		.logToolbar span { color: var(--text-muted); font-size: 12px; }
+		#copyLogButton { padding: 4px 12px; border: 1px solid var(--border); background: var(--panel-raised); color: var(--text); border-radius: 999px; cursor: pointer; font-size: 12px; transition: border-color 0.12s; }
+		#copyLogButton:hover { border-color: var(--accent); }
+		#logView { flex: 1; min-height: 160px; margin: 0; padding: 12px; background: #120d0a; color: var(--text); border: 1px solid var(--border); border-radius: 10px; font-family: var(--mono); font-size: 12px; line-height: 1.55; overflow: auto; white-space: pre-wrap; word-break: break-all; }
+
+		#settingsView { padding: 24px 20px; }
+		#settingsCard { max-width: 560px; }
+		.field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+		.field label { color: var(--text-muted); font-size: 13px; }
+		.field input { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--background); color: var(--text); font-family: var(--mono); }
+		.field input:focus { outline: none; border-color: var(--accent); }
+		.field .hint { color: var(--text-muted); font-size: 12px; }
+		#saveSettingsButton { padding: 8px 18px; border: 1px solid transparent; background: var(--accent); color: #2a1d10; border-radius: 999px; cursor: pointer; font-weight: 600; }
+		#saveSettingsButton:hover { background: #e6b374; }
+
+		#helpView { padding: 24px 20px; overflow: auto; }
+		#helpCard { max-width: 860px; line-height: 1.6; }
+		#helpCard h3 { margin: 22px 0 8px; font-size: 15px; color: var(--accent); }
+		#helpCard h3:first-of-type { margin-top: 4px; }
+		#helpCard p { margin: 6px 0; }
+		#helpCard pre { margin: 8px 0; padding: 10px 12px; background: #120d0a; border: 1px solid var(--border); border-radius: 6px; font-family: var(--mono); font-size: 12px; overflow: auto; }
+		#helpCard code { font-family: var(--mono); font-size: 12px; background: var(--panel-raised); padding: 1px 5px; border-radius: 4px; }
+		#helpCard table { border-collapse: collapse; width: 100%; margin: 8px 0; font-size: 13px; }
+		#helpCard th, #helpCard td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+		#helpCard th { color: var(--text-muted); font-weight: 500; }
+		#helpCard ul { margin: 6px 0; padding-left: 20px; }
+
+		@media (max-width: 860px) {
+			#jobsView { grid-template-columns: 1fr; }
+			#jobListPanel { flex: none; }
+			#jobList { max-height: 240px; }
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<div class="brand"><img src="/icon.png" alt="">vanilla-builder</div>
+		<nav>
+			<a href="#jobs" id="jobsTab">작업</a>
+			<a href="#settings" id="settingsTab">설정</a>
+			<a href="#help" id="helpTab">도움말</a>
+		</nav>
+	</header>
+
+	<main id="jobsView" class="view">
+		<div class="column">
+			<section class="panel">
+				<h2>업로드</h2>
+				<div id="dropZone"><strong>zip 을 여기에 끌어다 놓거나 클릭</strong>build-spec.json 과 웹 자산 폴더가 들어 있어야 합니다.</div>
+				<input id="fileInput" type="file" accept=".zip,application/zip" hidden>
+				<div class="sampleLink"><a href="/build-spec.sample.json" download="build-spec.json">샘플 build-spec.json 내려받기</a></div>
+				<div id="uploadMessage" class="message"></div>
+			</section>
+			<section class="panel" id="jobListPanel">
+				<h2>작업 <span id="summary"></span></h2>
+				<ul id="jobList"></ul>
+				<div id="emptyMessage" hidden>아직 작업이 없습니다.</div>
+			</section>
+		</div>
+		<section class="panel" id="detailPanel">
+			<div id="jobDetail" hidden>
+				<h2 id="jobTitle"></h2>
+				<div id="jobMeta"></div>
+				<div class="progress"><div id="progressBar"></div></div>
+				<ul id="stepList"></ul>
+				<div class="detailRow">
+					<button id="cancelButton" type="button">취소</button>
+					<ul id="artifactList"></ul>
+					<div id="jobError"></div>
+				</div>
+				<div class="logToolbar"><span>로그</span><button id="copyLogButton" type="button">전체 복사</button></div>
+				<pre id="logView"></pre>
+			</div>
+			<div id="detailEmptyMessage">작업을 선택하면 진행 단계와 로그가 보입니다.</div>
+		</section>
+	</main>
+
+	<main id="settingsView" class="view" hidden>
+		<section class="panel" id="settingsCard">
+			<h2>설정</h2>
+			<div class="field">
+				<label for="portInput">포트</label>
+				<input id="portInput" type="number" min="1" max="65535">
+				<div class="hint">바꾸면 새 포트를 먼저 열어 보고, 성공했을 때만 저장한 뒤 새 주소로 이동합니다.</div>
+			</div>
+			<div class="field">
+				<label for="workspaceInput">워크스페이스 디렉토리</label>
+				<input id="workspaceInput" type="text">
+				<div class="hint">프로젝트별 폴더(&lt;app.id&gt;/builds/&lt;번호&gt;)가 만들어지는 곳. 절대 경로 또는 ~/ 로 시작.</div>
+			</div>
+			<button id="saveSettingsButton" type="button">저장</button>
+			<div id="settingsMessage" class="message"></div>
+		</section>
+	</main>
+
+	<main id="helpView" class="view" hidden>
+		<section class="panel" id="helpCard">
+			<h2>도움말</h2>
+			<h3>이 서버가 하는 일</h3>
+			<p>vanilla.js 프로젝트의 <strong>웹 빌드 결과물</strong>과 <strong>빌드 명세</strong>를 받아 이 Mac 에서 macOS(.dmg)와 iOS(.ipa) 앱을 만들어 줍니다. 저장소 연동 없이 파일을 직접 보내는 원격 빌더입니다. 작업은 큐에 쌓여 한 번에 하나씩 돌고, 중간에 취소할 수 있습니다.</p>
+
+			<h3>1. 올릴 zip 만들기</h3>
+			<p>프로젝트에서 <code>npm run build</code> 로 만든 <code>build/web</code> 의 내용을 <code>web/</code> 폴더로 두고, 그 옆에 <code>build-spec.json</code> 을 넣어 zip 으로 묶습니다. 명세는 zip 루트에 있어야 합니다.</p>
+			<pre>project.zip
+├── build-spec.json
+└── web/
+    ├── index.html
+    └── ...</pre>
+			<p><a href="/build-spec.sample.json" download="build-spec.json">샘플 build-spec.json 내려받기</a></p>
+
+			<h3>2. build-spec.json 필드</h3>
+			<table>
+				<tr><th>필드</th><th>필수</th><th>설명</th></tr>
+				<tr><td><code>specVersion</code></td><td>필수</td><td>명세 형식 버전. 지금은 <code>1</code></td></tr>
+				<tr><td><code>app.id</code></td><td>필수</td><td>역도메인 형식 식별자. iOS 번들 ID 와 Electron appId 가 됩니다. 예: <code>com.example.mygame</code></td></tr>
+				<tr><td><code>app.name</code></td><td>필수</td><td>표시 이름. 산출물 파일명에도 쓰입니다</td></tr>
+				<tr><td><code>app.version</code></td><td>필수</td><td><code>X.Y.Z</code></td></tr>
+				<tr><td><code>source.webDir</code></td><td>필수</td><td>zip 루트 기준 웹 자산 폴더. <code>index.html</code> 이 있어야 합니다</td></tr>
+				<tr><td><code>targets.macos</code></td><td>선택</td><td>있으면 macOS 빌드. 지금은 옵션 없이 <code>{}</code></td></tr>
+				<tr><td><code>targets.ios.teamId</code></td><td>iOS 시 필수</td><td>Apple Developer Team ID (10자). Xcode 자동 서명에 씁니다</td></tr>
+				<tr><td><code>targets.ios.plugins</code></td><td>선택</td><td>웹 코드가 쓰는 Capacitor 플러그인 패키지 목록. 예: <code>["@capacitor/haptics@^8.0.2"]</code></td></tr>
+			</table>
+			<p>옵션이 없는 항목은 고정 기본 동작입니다. macOS 는 1280x720 창 하나에 서명 없는 dmg, iOS 는 Xcode 자동 서명에 App Store Connect 용 ipa 입니다.</p>
+
+			<h3>3. 올리는 방법</h3>
+			<p><strong>웹:</strong> 작업 화면의 업로드 영역에 zip 을 끌어다 놓거나 클릭해서 고릅니다.</p>
+			<p><strong>API (curl):</strong> zip 을 본문으로 그대로 보냅니다. <code>targets</code> 로 명세의 일부 플랫폼만 고를 수 있습니다.</p>
+			<pre>curl -X POST "http://이서버주소:포트/api/jobs?targets=macos" \
+     -H "Content-Type: application/zip" --data-binary @project.zip
+# 응답: { "id": 12 }</pre>
+
+			<h3>4. API 목록</h3>
+			<table>
+				<tr><th>메서드</th><th>경로</th><th>설명</th></tr>
+				<tr><td>POST</td><td><code>/api/jobs</code></td><td>zip 본문으로 작업 생성. 선택 쿼리 <code>?targets=macos,ios</code>. 성공 201 <code>{ "id" }</code>, 명세 오류 400 <code>{ "errors": [...] }</code></td></tr>
+				<tr><td>GET</td><td><code>/api/jobs</code></td><td>작업 목록 (최신순)</td></tr>
+				<tr><td>GET</td><td><code>/api/jobs/:id</code></td><td>상세: 상태, 단계별 상태, 산출물 목록, 오류</td></tr>
+				<tr><td>GET</td><td><code>/api/jobs/:id/log</code></td><td>로그 텍스트. <code>?offset=N</code> 이면 N 바이트 이후만</td></tr>
+				<tr><td>POST</td><td><code>/api/jobs/:id/cancel</code></td><td>취소. 이미 끝났으면 409</td></tr>
+				<tr><td>GET</td><td><code>/api/jobs/:id/artifacts/:filename</code></td><td>산출물 다운로드</td></tr>
+				<tr><td>GET</td><td><code>/api/settings</code></td><td>설정 <code>{ "port", "workspaceDir" }</code></td></tr>
+				<tr><td>PUT</td><td><code>/api/settings</code></td><td>설정 변경. JSON 본문 <code>{ "port"?, "workspaceDir"? }</code></td></tr>
+			</table>
+			<p>작업 상태: <code>queued</code> → <code>running</code> → <code>succeeded</code> / <code>failed</code> / <code>canceled</code>. 단계는 플랫폼마다 <code>prepare</code> → <code>build</code> → <code>deliver</code> 입니다.</p>
+			<p>완료를 기다리는 흐름: <code>POST /api/jobs</code> → <code>GET /api/jobs/:id</code> 를 상태가 끝날 때까지 폴링 → <code>artifacts</code> 의 파일명으로 다운로드.</p>
+
+			<h3>5. 설정과 서비스</h3>
+			<ul>
+				<li>설정 화면에서 포트와 워크스페이스 디렉토리를 바꿉니다. 작업 파일은 <code>&lt;워크스페이스&gt;/&lt;app.id&gt;/builds/&lt;번호&gt;/</code> 에 남습니다.</li>
+				<li>서버는 macOS launchd 사용자 에이전트로 상시 실행됩니다. 재등록/재시작은 <code>sh scripts/install.sh</code>, 해제는 <code>sh scripts/uninstall.sh</code>.</li>
+				<li>서버 로그: <code>~/Library/Logs/vanilla-builder/server.log</code></li>
+			</ul>
+		</section>
+	</main>
+
+	<script>
+		//==============================================================================
+		// 현황 페이지. 해시로 작업/설정 화면을 전환하고, 작업 화면은 2초마다 갱신한다.
+		//==============================================================================
+		const System = globalThis;
+		const POLL_INTERVAL_MILLISECONDS = 2000;
+		const JOB_STATE_LABELS = { queued: "대기", running: "진행 중", succeeded: "성공", failed: "실패", canceled: "취소됨" };
+		const STEP_STATE_LABELS = { pending: "대기", running: "진행 중", succeeded: "성공", failed: "실패", skipped: "건너뜀", canceled: "취소됨" };
+		const FINISHED_STATES = ["succeeded", "failed", "canceled"];
+		const DONE_STEP_STATES = ["succeeded", "failed", "skipped", "canceled"];
+
+		const summaryElement = System.document.getElementById("summary");
+		const jobsViewElement = System.document.getElementById("jobsView");
+		const settingsViewElement = System.document.getElementById("settingsView");
+		const jobsTabElement = System.document.getElementById("jobsTab");
+		const settingsTabElement = System.document.getElementById("settingsTab");
+		const helpViewElement = System.document.getElementById("helpView");
+		const helpTabElement = System.document.getElementById("helpTab");
+		const jobListElement = System.document.getElementById("jobList");
+		const emptyMessageElement = System.document.getElementById("emptyMessage");
+		const jobDetailElement = System.document.getElementById("jobDetail");
+		const detailEmptyMessageElement = System.document.getElementById("detailEmptyMessage");
+		const jobTitleElement = System.document.getElementById("jobTitle");
+		const jobMetaElement = System.document.getElementById("jobMeta");
+		const progressBarElement = System.document.getElementById("progressBar");
+		const stepListElement = System.document.getElementById("stepList");
+		const jobErrorElement = System.document.getElementById("jobError");
+		const cancelButtonElement = System.document.getElementById("cancelButton");
+		const artifactListElement = System.document.getElementById("artifactList");
+		const logViewElement = System.document.getElementById("logView");
+		const copyLogButtonElement = System.document.getElementById("copyLogButton");
+		const dropZoneElement = System.document.getElementById("dropZone");
+		const fileInputElement = System.document.getElementById("fileInput");
+		const uploadMessageElement = System.document.getElementById("uploadMessage");
+		const portInputElement = System.document.getElementById("portInput");
+		const workspaceInputElement = System.document.getElementById("workspaceInput");
+		const saveSettingsButtonElement = System.document.getElementById("saveSettingsButton");
+		const settingsMessageElement = System.document.getElementById("settingsMessage");
+		const logDecoder = new System.TextDecoder();
+
+		let selectedJobId = null;
+		let logJobId = null;
+		let logOffset = 0;
+		let refreshing = false;
+
+		//==============================================================================
+		// 화면 전환. 해시가 #settings 면 설정, #help 면 도움말, 나머지는 작업.
+		//==============================================================================
+		function showView() {
+			const hash = System.location.hash;
+			const isSettings = hash === "#settings";
+			const isHelp = hash === "#help";
+			jobsViewElement.hidden = isSettings || isHelp;
+			settingsViewElement.hidden = !isSettings;
+			helpViewElement.hidden = !isHelp;
+			jobsTabElement.className = (isSettings || isHelp) ? "" : "active";
+			settingsTabElement.className = isSettings ? "active" : "";
+			helpTabElement.className = isHelp ? "active" : "";
+			if (isSettings) {
+				loadSettings();
+			}
+		}
+
+		//==============================================================================
+		// JSON 요청.
+		//==============================================================================
+		async function fetchJson(url) {
+			const response = await System.fetch(url);
+			return await response.json();
+		}
+
+		//==============================================================================
+		// 시각 표시.
+		//==============================================================================
+		function formatTime(isoText) {
+			if (isoText === null) {
+				return "-";
+			}
+			const moment = new System.Date(isoText);
+			return moment.toLocaleString("ko-KR");
+		}
+
+		//==============================================================================
+		// 상태 배지.
+		//==============================================================================
+		function createBadge(state, labels) {
+			const badge = System.document.createElement("span");
+			badge.className = `badge ${state}`;
+			badge.textContent = labels[state] || state;
+			return badge;
+		}
+
+		//==============================================================================
+		// 메시지 표시.
+		//==============================================================================
+		function showMessage(element, text, isError) {
+			element.textContent = text;
+			element.className = isError ? "message error" : "message ok";
+		}
+
+		//==============================================================================
+		// 기본 선택. 진행 중 → 다음에 돌 대기 작업 → 최신 작업.
+		//==============================================================================
+		function pickDefaultJobId(jobs) {
+			const runningJob = jobs.find((job) => {
+				return job.state === "running";
+			});
+			if (runningJob !== undefined) {
+				return runningJob.id;
+			}
+			const queuedJobs = jobs.filter((job) => {
+				return job.state === "queued";
+			});
+			if (queuedJobs.length > 0) {
+				const nextJob = queuedJobs[queuedJobs.length - 1];
+				return nextJob.id;
+			}
+			if (jobs.length > 0) {
+				const latestJob = jobs[0];
+				return latestJob.id;
+			}
+			return null;
+		}
+
+		//==============================================================================
+		// 머리말 요약.
+		//==============================================================================
+		function renderSummary(jobs) {
+			const queuedCount = jobs.filter((job) => {
+				return job.state === "queued";
+			}).length;
+			const runningCount = jobs.filter((job) => {
+				return job.state === "running";
+			}).length;
+			summaryElement.textContent = `대기 ${queuedCount} · 진행 중 ${runningCount} · 전체 ${jobs.length}`;
+		}
+
+		//==============================================================================
+		// 작업 목록.
+		//==============================================================================
+		function renderJobList(jobs) {
+			jobListElement.textContent = "";
+			emptyMessageElement.hidden = jobs.length > 0;
+			for (const job of jobs) {
+				const item = System.document.createElement("li");
+				if (job.id === selectedJobId) {
+					item.className = "selected";
+				}
+				const numberElement = System.document.createElement("span");
+				numberElement.className = "jobNumber";
+				numberElement.textContent = `#${job.id}`;
+				const nameElement = System.document.createElement("span");
+				nameElement.className = "jobName";
+				nameElement.textContent = `${job.appName} ${job.appVersion}`;
+				const targetsElement = System.document.createElement("div");
+				targetsElement.className = "jobTargets";
+				targetsElement.textContent = job.targets.join(", ");
+				nameElement.appendChild(targetsElement);
+				const badge = createBadge(job.state, JOB_STATE_LABELS);
+				item.appendChild(numberElement);
+				item.appendChild(nameElement);
+				item.appendChild(badge);
+				item.addEventListener("click", () => {
+					selectedJobId = job.id;
+					refresh();
+				});
+				jobListElement.appendChild(item);
+			}
+		}
+
+		//==============================================================================
+		// 선택한 작업의 상세.
+		//==============================================================================
+		function renderDetail(detail) {
+			jobDetailElement.hidden = false;
+			detailEmptyMessageElement.hidden = true;
+
+			jobTitleElement.textContent = `#${detail.id} ${detail.appName} ${detail.appVersion}`;
+			jobTitleElement.appendChild(createBadge(detail.state, JOB_STATE_LABELS));
+
+			jobMetaElement.textContent = "";
+			const metaEntries = [
+				`대상: ${detail.targets.join(", ")}`,
+				`생성: ${formatTime(detail.createdAt)}`,
+				`시작: ${formatTime(detail.startedAt)}`,
+				`종료: ${formatTime(detail.finishedAt)}`,
+			];
+			for (const metaText of metaEntries) {
+				const metaElement = System.document.createElement("span");
+				metaElement.textContent = metaText;
+				jobMetaElement.appendChild(metaElement);
+			}
+
+			const doneCount = detail.steps.filter((step) => {
+				return DONE_STEP_STATES.includes(step.state);
+			}).length;
+			const percent = detail.steps.length === 0 ? 0 : System.Math.round(doneCount * 100 / detail.steps.length);
+			progressBarElement.style.width = `${percent}%`;
+
+			stepListElement.textContent = "";
+			for (const step of detail.steps) {
+				const item = System.document.createElement("li");
+				const nameElement = System.document.createElement("span");
+				nameElement.textContent = step.name;
+				item.appendChild(nameElement);
+				item.appendChild(createBadge(step.state, STEP_STATE_LABELS));
+				stepListElement.appendChild(item);
+			}
+
+			jobErrorElement.textContent = detail.error === null ? "" : detail.error;
+			cancelButtonElement.hidden = FINISHED_STATES.includes(detail.state);
+
+			artifactListElement.textContent = "";
+			if (detail.artifacts.length === 0) {
+				const item = System.document.createElement("li");
+				item.className = "none";
+				item.textContent = "산출물 없음";
+				artifactListElement.appendChild(item);
+			}
+			for (const filename of detail.artifacts) {
+				const item = System.document.createElement("li");
+				const link = System.document.createElement("a");
+				const encodedFilename = System.encodeURIComponent(filename);
+				link.href = `/api/jobs/${detail.id}/artifacts/${encodedFilename}`;
+				link.textContent = filename;
+				item.appendChild(link);
+				artifactListElement.appendChild(item);
+			}
+		}
+
+		//==============================================================================
+		// 로그 이어받기. 작업이 바뀌면 처음부터, 같으면 받은 바이트 이후부터.
+		//==============================================================================
+		async function refreshLog(jobId) {
+			if (logJobId !== jobId) {
+				logJobId = jobId;
+				logOffset = 0;
+				logViewElement.textContent = "";
+			}
+			const response = await System.fetch(`/api/jobs/${jobId}/log?offset=${logOffset}`);
+			const buffer = await response.arrayBuffer();
+			if (buffer.byteLength === 0) {
+				return;
+			}
+			logOffset += buffer.byteLength;
+			const shouldStickToBottom = logViewElement.scrollTop + logViewElement.clientHeight >= logViewElement.scrollHeight - 20;
+			logViewElement.textContent += logDecoder.decode(buffer, { stream: true });
+			if (shouldStickToBottom) {
+				logViewElement.scrollTop = logViewElement.scrollHeight;
+			}
+		}
+
+		//==============================================================================
+		// 작업 화면 갱신.
+		//==============================================================================
+		async function refresh() {
+			if (refreshing) {
+				return;
+			}
+			refreshing = true;
+			try {
+				const jobs = await fetchJson("/api/jobs");
+				if (selectedJobId === null) {
+					selectedJobId = pickDefaultJobId(jobs);
+				}
+				renderSummary(jobs);
+				renderJobList(jobs);
+				if (selectedJobId !== null) {
+					const detail = await fetchJson(`/api/jobs/${selectedJobId}`);
+					renderDetail(detail);
+					await refreshLog(selectedJobId);
+				}
+			}
+			catch (refreshError) {
+				summaryElement.textContent = `갱신 실패: ${refreshError.message}`;
+			}
+			finally {
+				refreshing = false;
+			}
+		}
+
+		//==============================================================================
+		// zip 업로드. 성공하면 만들어진 작업을 선택한다.
+		//==============================================================================
+		async function uploadZip(file) {
+			showMessage(uploadMessageElement, `${file.name} 올리는 중...`, false);
+			try {
+				const response = await System.fetch("/api/jobs", {
+					method: "POST",
+					headers: { "Content-Type": "application/zip" },
+					body: file,
+				});
+				const result = await response.json();
+				if (response.status !== 201) {
+					const errorText = result.errors === undefined ? result.error : result.errors.join(" / ");
+					showMessage(uploadMessageElement, `업로드 실패: ${errorText}`, true);
+					return;
+				}
+				showMessage(uploadMessageElement, `작업 #${result.id} 이 큐에 들어갔습니다.`, false);
+				selectedJobId = result.id;
+				await refresh();
+			}
+			catch (uploadError) {
+				showMessage(uploadMessageElement, `업로드 실패: ${uploadError.message}`, true);
+			}
+		}
+
+		dropZoneElement.addEventListener("click", () => {
+			fileInputElement.click();
+		});
+		dropZoneElement.addEventListener("dragover", (dragEvent) => {
+			dragEvent.preventDefault();
+			dropZoneElement.classList.add("active");
+		});
+		dropZoneElement.addEventListener("dragleave", () => {
+			dropZoneElement.classList.remove("active");
+		});
+		dropZoneElement.addEventListener("drop", (dropEvent) => {
+			dropEvent.preventDefault();
+			dropZoneElement.classList.remove("active");
+			const droppedFiles = dropEvent.dataTransfer.files;
+			if (droppedFiles.length === 0) {
+				return;
+			}
+			const droppedFile = droppedFiles[0];
+			uploadZip(droppedFile);
+		});
+		fileInputElement.addEventListener("change", () => {
+			const chosenFiles = fileInputElement.files;
+			if (chosenFiles.length === 0) {
+				return;
+			}
+			const chosenFile = chosenFiles[0];
+			uploadZip(chosenFile);
+			fileInputElement.value = "";
+		});
+
+		//==============================================================================
+		// 설정 읽기와 저장. 포트가 바뀌면 새 주소로 이동한다.
+		//==============================================================================
+		async function loadSettings() {
+			const settings = await fetchJson("/api/settings");
+			portInputElement.value = settings.port;
+			workspaceInputElement.value = settings.workspaceDir;
+		}
+
+		async function saveSettings() {
+			const portText = portInputElement.value;
+			const workspaceText = workspaceInputElement.value;
+			const record = { port: System.Number(portText), workspaceDir: workspaceText };
+			const previousPort = System.Number(System.location.port || 80);
+			try {
+				const response = await System.fetch("/api/settings", {
+					method: "PUT",
+					headers: { "Content-Type": "application/json" },
+					body: System.JSON.stringify(record),
+				});
+				const result = await response.json();
+				if (response.status !== 200) {
+					showMessage(settingsMessageElement, `저장 실패: ${result.errors.join(" / ")}`, true);
+					return;
+				}
+				portInputElement.value = result.port;
+				workspaceInputElement.value = result.workspaceDir;
+				if (result.port !== previousPort) {
+					showMessage(settingsMessageElement, `저장했습니다. 포트가 바뀌어 ${result.port} 로 이동합니다.`, false);
+					const nextUrl = new System.URL(System.location.href);
+					nextUrl.port = System.String(result.port);
+					System.setTimeout(() => {
+						System.location.href = nextUrl.href;
+					}, 1000);
+					return;
+				}
+				showMessage(settingsMessageElement, "저장했습니다.", false);
+			}
+			catch (saveError) {
+				showMessage(settingsMessageElement, `저장 실패: ${saveError.message}`, true);
+			}
+		}
+
+		saveSettingsButtonElement.addEventListener("click", () => {
+			saveSettings();
+		});
+
+		//==============================================================================
+		// 로그 전체 복사. 화면에 받은 부분이 아니라 서버의 전체 로그를 다시 받아 복사한다.
+		//==============================================================================
+		copyLogButtonElement.addEventListener("click", async () => {
+			if (selectedJobId === null) {
+				return;
+			}
+			const originalLabel = copyLogButtonElement.textContent;
+			try {
+				const response = await System.fetch(`/api/jobs/${selectedJobId}/log`);
+				const logText = await response.text();
+				await System.navigator.clipboard.writeText(logText);
+				copyLogButtonElement.textContent = "복사했습니다";
+			}
+			catch (copyError) {
+				copyLogButtonElement.textContent = `복사 실패: ${copyError.message}`;
+			}
+			System.setTimeout(() => {
+				copyLogButtonElement.textContent = originalLabel;
+			}, 1500);
+		});
+
+		cancelButtonElement.addEventListener("click", async () => {
+			if (selectedJobId === null) {
+				return;
+			}
+			await System.fetch(`/api/jobs/${selectedJobId}/cancel`, { method: "POST" });
+			await refresh();
+		});
+
+		System.addEventListener("hashchange", showView);
+		showView();
+		refresh();
+		System.setInterval(refresh, POLL_INTERVAL_MILLISECONDS);
+	</script>
+</body>
+</html>

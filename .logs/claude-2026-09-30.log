@@ -1,0 +1,17 @@
+[00:05 요청 → 00:13 응답] 아이콘 생성 (웹 버전)
+- 요청: .env 에 Gemini 키(GOOGLE_GEMINI_V3_KEY) 넣었으니 아이콘 생성. 웹 버전부터.
+- 작업: docs/05-icon.md 신규. tools/gen_icon.py (scramble-heroes 의 gen_assets_gemini.py 와 같은 REST 방식, gemini-2.5-flash-image, 후보 N장 → artwork/icon-candidate-n.png, 선택본을 artwork/icon-1024.png 와 public/icon.png(256) 로 저장, --pick 지원). src/httpserver.js 에 public/ 정적 파일(png/svg/ico, 하위 경로 불가) 라우트 추가. public/index.html 에 파비콘과 머리말 로고 적용. scripts/install.sh 의 bootout 직후 bootstrap 실패(비동기 race) 수정: 내려갈 때까지 대기.
+- 검증: 후보 3장 생성 성공(모두 바닐라 크림 바탕 + 큐브 + 렌치), 1번 적용. npm test 11건 통과. 서비스 재등록 후 GET /icon.png 200, 없는 파일 404, 페이지에 적용 확인.
+
+[00:16 요청 → 00:22 응답] 현황 페이지 개편, 도움말, 메뉴 막대 아이콘
+- 요청: 로그창을 화면에 맞춰 최대한 넓게, 샘플 build-spec.json 다운로드, 다크모드로 예쁘게, 설정은 화면 전환. 요약 숫자를 헤더에서 빼기. 도움말 페이지(업로드 방법, API 목록). 바닐라 계열 다크 컬러. 백그라운드 앱인데 메뉴 막대에 표시가 없음. 로그 전체 복사 버튼. 폰트 등 전체적으로 애플스럽게.
+- 작업: public/index.html 재작성 (바닐라 다크 팔레트, 시스템 폰트, 반투명 헤더, 둥근 패널, 작업/설정/도움말 해시 전환, 로그가 남는 높이 전부 차지, 로그 전체 복사 버튼(서버 전체 로그 재요청 후 클립보드), 요약은 작업 목록 제목 옆). public/build-spec.sample.json + 정적 라우트에 json 허용. docs/02 §5 갱신, docs/06-menubar.md 신규, docs/00 목록 갱신. menubar/main.swift (NSStatusItem, 5초 폴링, 현황 열기/서버 재시작/끄기). scripts/install.sh 가 swiftc 로 컴파일해 ~/.vanilla-builder/bin 에 두고 두 번째 LaunchAgent(com.ddukbaek2.vanilla-builder.menubar) 등록, uninstall.sh 도 정리.
+- 검증: npm test 11건 통과. install.sh 로 두 에이전트 모두 running. 샘플 json 200. 페이지 스크린샷으로 세 화면 확인.
+- 추가 수정: #jobsView 의 id 선택자가 .view[hidden] 보다 우선해 설정/도움말 화면에서 작업 화면이 같이 보이던 버그 → !important 로 해결. 스크린샷으로 세 화면 재확인.
+- 메뉴 막대 '메뉴 막대 아이콘 끄기' → '종료' (서버와 아이콘 모두 내림). 재컴파일·재등록 확인.
+
+[00:30 요청 → 00:44 응답] 아이콘 개선, 스크롤바, 클라이언트 도구, 랜딩 페이지
+- 요청: 아이콘이 허접하니 더 예쁘게. build-spec.json 포함해 프로젝트를 빌드용으로 아카이빙하는 심플한 앱. 웹 UI 스크롤바가 배경과 같아 안 보임. (포트폴리오 대신) 랜딩 페이지를 \\DS216PLUSII\web\ddukbaek2\publish 에 만들고 맥 버전 다운로드와 GitHub 주소(공개 저장소) 포함.
+- 작업: tools/gen_icon.py 프롬프트를 Big Sur 풍 입체 렌더로 바꿔 후보 4장 생성, 3번 채택(public/icon.png, artwork/icon-1024.png), 서비스 재등록으로 메뉴 막대 아이콘 갱신. public/index.html 스크롤바 스타일. client/vanilla-pack.mjs (init/pack/send, 내장 zlib 로 zip 직접 생성, 폴링·산출물 다운로드) + docs/07-client.md. landing/index.html + landing/images + scripts/publish.sh + docs/08-landing.md. docs/05 갱신.
+- 검증: 클라이언트로 init → pack(무결성 OK) → send 로 macOS 빌드 #4 성공, dmg 124MB 수신. publish.sh 로 NAS 에 index.html, images, download/vanilla-builder-macos.zip, download/vanilla-pack.mjs 배포. 배포판에 .env/node_modules 미포함 확인.
+- 참고: GitHub 저장소 ddukbaek2/vanilla-builder 는 아직 없음(404), 로컬도 git 미초기화. 랜딩에는 관례 주소를 넣어 둠.

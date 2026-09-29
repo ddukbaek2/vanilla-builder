@@ -1,0 +1,48 @@
+[17:43 요청 → 17:47 응답] 프로젝트 목적 및 작업 방식 지시
+- 요청: 원격 빌드 서버 애플리케이션 제작. 모든 요청은 기획서 md 로 작성하며 진행, CLAUDE.md 준수. Git 없이 웹으로 프로젝트를 넘기면 빌드 후 산출물 반환.
+- 작업: docs/00-project-overview.md 작성 (목적, 확정 사항, 기본 흐름, 가정, 미확정 질문 8건)
+- 미확정: 빌드 대상 종류, 빌드 방법 지정 방식, 업로드/산출물 형식, 동시 빌드, 보관 정책, 인증, 런타임(Node.js 프레임워크 미사용 가정)
+
+[17:47 요청 → 17:49 응답] 빌드 대상 플랫폼 및 소스 프로젝트 종류 확정
+- 요청: 빌드 산출물 대상은 macOS/Windows/Linux/Android/iOS/Web 6종. 서버는 macOS 용. 소스는 vanilla.js 엔진 기반 게임/서버/일반 앱이며 주로 Capacitor/Electron 빌드. Unity/SteamOS 는 추후 확장.
+- 작업: docs/00-project-overview.md 갱신 (확정 사항 추가, 플랫폼별 툴체인 표 작성, 다음 단계 세부 기획 목록 정리)
+- 미확정: 빌드 설정 위치 (프로젝트가 Capacitor/Electron 설정을 가짐 vs 서버가 템플릿을 씌움), 나머지는 제안 기본값으로 진행 예정
+
+[17:49 요청 → 17:51 응답] 프로젝트 배경(동기) 추가
+- 요청: 주 작업 PC 는 Windows. iOS/macOS 빌드 때마다 Mac 에서 git pull 후 직접 빌드하는 수고를 없애는 것이 목적.
+- 작업: docs/00-project-overview.md 갱신 (배경과 우선순위 추가, iOS/macOS 를 1순위로 표시, 빌드 설정 위치를 해석 A 로 가정하고 확인 요청)
+- 미확정: 해석 A 확인, 현재 Mac 에서 실행하는 실제 빌드 명령
+
+[17:52 요청 → 17:58 응답] 빌드 명세(build-spec.json) 규격 초안 — macOS/iOS
+- 요청: 클라이언트(작업 PC 의 AI)가 프로젝트 + 명세 파일을 넘기면 서버가 명세대로 빌드해 결과 폴더로 전달. 명세 규격을 macOS/iOS 우선으로 설계할 것.
+- 작업: docs/00-project-overview.md 갱신 (AI 클라이언트 시나리오, 명세 파일, 기획서 목록 표). docs/01-build-spec.md 신규 작성 (설계 결정 3건, 전체 예시, 공통/macOS/iOS 필드 표, 검증 규칙, 추후 항목)
+- 결정(확인 요청): 프로젝트는 순수 웹 프로젝트이며 Electron/Capacitor 껍데기는 서버가 생성. 명세는 프로젝트 루트의 build-spec.json. output.path 는 Mac 기준 절대 경로(네트워크 공유 가능), 생략 시 다운로드 API 로 수령.
+
+[17:56 요청 → 18:02 응답] 범위 축소 및 서버 요구사항(현황 페이지, 큐, 취소) 반영
+- 요청: 기본부터 하나씩 옵션 확장. Jenkins 처럼 웹에서 진행 단계 확인(API + 현황 페이지). 빌드 중간 취소, 큐 적재. 상시 실행 서버 애플리케이션.
+- 작업: docs/01-build-spec.md 를 기본 항목만 남기고 축소 (제거한 옵션은 "추후 옵션 후보" 절로 이동). docs/00-project-overview.md 확정 사항 추가. docs/02-server-and-api.md 신규 작성 (Job 모델/상태/단계, 디렉토리, HTTP API, 현황 페이지, 재시작 복원, .env 설정, 모듈 구성)
+- 결정(확인 요청): 업로드는 zip 바이너리 본문 그대로(multipart 없음), 순차 큐 1개, 2초 폴링 현황 페이지
+
+[20:56 요청 → 20:57 응답] 대상 프로젝트 확인 및 빌드 실행기 기획
+- 요청: 대상은 scramble-heroes(게임), my-diabetes-notes(앱). 결과 폴더는 제외하고 URL 다운로드. 기존 platforms/ 방식을 고집하지 말고 두 프로젝트의 로직만으로 서버가 네이티브 프로젝트를 생성해 결과만 반환.
+- 조사: 두 프로젝트의 package.json, project-manifest.json, tools/manifest.cjs, platforms/appstore/tools/buildipa.cjs, stage.cjs, ExportOptions.plist, Xcode 26.6 확인. 기존 iOS 절차(stage → cap sync ios → xcodebuild archive(자동 서명, 팀 ID) → exportArchive(app-store-connect))를 파악.
+- 작업: docs/00 확정 사항 갱신(서버가 껍데기 생성, URL 다운로드, 대상 프로젝트 2개, 입력은 웹 빌드 결과물). docs/01 결과 폴더 제거, zip 구조 정의, targets.ios.plugins 추가, iOS 기본 export method 를 app-store-connect 로. docs/02 전달 단계 정리. docs/03-build-runner.md 신규(iOS/macOS 절차, 리스크).
+- 결정(확인 요청): 입력은 소스가 아니라 build/web 결과물. 미확정: iPhone 설치 경로(TestFlight 업로드 단계 필요 여부), scramble-heroes 의 Capacitor 6/8 불일치
+
+[21:00 요청 → 21:23 응답] 서버 골격 구현
+- 요청: TestFlight 업로드는 나중에. 서버 골격부터 구현.
+- 작업: package.json(.env.example, .gitignore 포함), src/main.js, src/httpserver.js, src/jobqueue.js, src/job.js, src/buildspec.js, src/commandrunner.js, public/index.html(현황 페이지), test/server.test.js 작성. docs/02 모듈 목록을 실제 구현에 맞게 갱신.
+- 검증: npm test 5건 통과 (명세 검증 400, 순차 실행/산출물/로그/offset, 실행 중 취소, 대기 중 취소, 재시작 복원). npm start 로 기동해 GET /, GET /api/jobs, POST 확인.
+- 현재 상태: 빌더 미등록이라 실제 빌드 작업은 아직 생성되지 않음 (400 "지원하지 않는 플랫폼"). 다음 단계는 docs/03 의 MacosBuilder / IosBuilder 구현.
+
+[21:40 요청 → 21:58 응답] 상시 서비스화, 웹 설정(포트/워크스페이스), 드래그 업로드
+- 요청: npm 실행이 아니라 백그라운드 상시 서버여야 함. 워크스페이스 기본 ~/.vanilla-builder/ 에 프로젝트별 폴더, 옵션으로 변경. 모든 설정은 Jenkins 처럼 웹 UI. 포트도 웹 설정에서 변경(기본은 내가 정함). 웹에서 파일 드래그로 사람이 수동 업로드 가능해야 함. 성격은 저장소 없는 GitHub 플랫폼 빌드 액션(잡/파이프라인 셋팅 없음).
+- 작업: docs/04-service-install.md 신규, docs/00/02 갱신. src/settings.js 신규(settings.json, port/workspaceDir 검증). src/jobqueue.js 를 <워크스페이스>/<app.id>/builds/<id> 구조와 종료(shutdown) 처리로 수정. src/httpserver.js 에 GET/PUT /api/settings 와 포트 변경(새 포트 먼저 열고 성공 시에만 저장, 응답 후 옛 포트 닫기) 추가. src/main.js 를 설정 기반 + SIGTERM/SIGINT 처리로 수정(.env 제거). public/index.html 에 zip 드래그 업로드와 설정 영역 추가. scripts/install.sh, uninstall.sh (launchd LaunchAgent com.ddukbaek2.vanilla-builder, KeepAlive). 기본 포트 8686 (8080 은 Jenkins 사용 중).
+- 검증: npm test 8건 통과 (기존 5건 + 종료, 설정 변경/워크스페이스 이동, 포트 변경/사용 중 포트 되돌리기). scripts/install.sh 로 실제 등록 → state running, http://localhost:8686 응답. SIGTERM 보내면 "실행 중인 빌드를 끊고 종료" 로그 후 launchd 가 새 pid 로 재기동 확인.
+- 현재 상태: 서비스가 이 Mac 에서 돌고 있음. 빌더 미등록 상태라 실제 빌드는 다음 단계(docs/03).
+
+[22:05 요청 → 23:55 응답] macOS / iOS 빌더 구현
+- 요청: 맥이랑 아이폰용 앱 빌더부터 구현.
+- 작업: src/builders/toolversions.js (Electron ^44.4.5, electron-builder ^26.15.3, Capacitor ^8.5.2), src/builders/common.js (웹 자산 복사, 산출물 파일명, 패키지 이름, .bin 경로, JSON 쓰기), src/builders/macosbuilder.js (Electron 래퍼 생성 → npm install → electron-builder --mac, identity null + CSC_IDENTITY_AUTO_DISCOVERY=false → out/*.dmg), src/builders/iosbuilder.js (package.json + capacitor.config.json + www → npm install → cap add ios --packagemanager SPM → cap sync ios → ExportOptions.plist → xcodebuild archive(자동 서명, DEVELOPMENT_TEAM, MARKETING_VERSION, derivedDataPath) → exportArchive → out/*.ipa). src/main.js 에 두 빌더 등록. test/builders.test.js 신규. docs/03 갱신.
+- 검증: npm test 11건 통과. 서비스 재시작 후 my-diabetes-notes 의 실제 build/web 으로 zip 을 만들어 macOS(#1)와 iOS(#2) 빌드를 실제 실행 → 둘 다 succeeded. dmg 130MB, ipa 는 번들 ID/표시 이름/버전과 웹 자산(public/) 포함 확인. 산출물 URL 다운로드 확인.
+- 소요 시간: macOS #1 51초. iOS #2 는 1시간 39분 (패키지 해석 후 빌드 시작 전 xcodebuild 가 98분 대기 — 첫 실행의 프로비저닝/키체인 단계로 추정, 실제 컴파일은 10초). 같은 zip 으로 다시 건 iOS #3 은 43초 만에 성공해 재현되지 않음.

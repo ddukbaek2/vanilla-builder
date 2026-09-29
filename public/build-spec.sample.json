@@ -1,0 +1,18 @@
+{
+	"specVersion": 1,
+	"app": {
+		"id": "com.example.mygame",
+		"name": "My Game",
+		"version": "1.0.0"
+	},
+	"source": {
+		"webDir": "web"
+	},
+	"targets": {
+		"macos": {},
+		"ios": {
+			"teamId": "ABCDE12345",
+			"plugins": ["@capacitor/haptics@^8.0.2"]
+		}
+	}
+}

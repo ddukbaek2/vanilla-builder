@@ -1,0 +1,16 @@
+{
+	"name": "vanilla-builder",
+	"version": "0.1.0",
+	"private": true,
+	"type": "module",
+	"description": "vanilla.js 프로젝트의 웹 빌드 결과물을 받아 macOS/iOS 앱으로 빌드해 주는 원격 빌드 서버",
+	"main": "src/main.js",
+	"scripts": {
+		"start": "node src/main.js",
+		"dev": "node --watch src/main.js",
+		"test": "node --test test/*.test.js"
+	},
+	"engines": {
+		"node": ">=22"
+	}
+}
