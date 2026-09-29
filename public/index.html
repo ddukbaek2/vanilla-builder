@@ -107,6 +107,10 @@
 		.field input { padding: 9px 12px; border: 1px solid var(--border); border-radius: 8px; font-size: 14px; background: var(--background); color: var(--text); font-family: var(--mono); }
 		.field input:focus { outline: none; border-color: var(--accent); }
 		.field .hint { color: var(--text-muted); font-size: 12px; }
+		.field.toggle { flex-direction: row; align-items: center; gap: 10px; }
+		.field.toggle input { width: 18px; height: 18px; accent-color: var(--accent); margin: 0; }
+		.field.toggle label { color: var(--text); font-size: 14px; }
+		#buildDisabledNotice { margin-bottom: 10px; padding: 10px 12px; border-radius: 8px; background: var(--danger-soft); color: var(--danger); font-size: 13px; }
 		#saveSettingsButton { padding: 8px 18px; border: 1px solid transparent; background: var(--accent); color: #2a1d10; border-radius: 999px; cursor: pointer; font-weight: 600; }
 		#saveSettingsButton:hover { background: #e6b374; }
 
@@ -143,6 +147,7 @@
 		<div class="column">
 			<section class="panel">
 				<h2>업로드</h2>
+				<div id="buildDisabledNotice" hidden>이 PC 는 빌드 허용이 꺼져 있어 업로드를 받지 않습니다. <a href="#settings">설정</a>에서 켜세요.</div>
 				<div id="dropZone"><strong>zip 을 여기에 끌어다 놓거나 클릭</strong>build-spec.json 과 웹 자산 폴더가 들어 있어야 합니다.</div>
 				<input id="fileInput" type="file" accept=".zip,application/zip" hidden>
 				<div class="sampleLink"><a href="/build-spec.sample.json" download="build-spec.json">샘플 build-spec.json 내려받기</a></div>
@@ -185,6 +190,11 @@
 				<input id="workspaceInput" type="text">
 				<div class="hint">프로젝트별 폴더(&lt;app.id&gt;/builds/&lt;번호&gt;)가 만들어지는 곳. 절대 경로 또는 ~/ 로 시작.</div>
 			</div>
+			<div class="field toggle">
+				<input id="allowBuildsInput" type="checkbox">
+				<label for="allowBuildsInput">이 PC 에서 빌드 허용</label>
+			</div>
+			<div class="hint" style="margin: -8px 0 16px; color: var(--text-muted); font-size: 12px;">꺼져 있으면 새 업로드를 받지 않습니다. 기본은 꺼짐이며 메뉴 막대에서도 바꿀 수 있습니다.</div>
 			<button id="saveSettingsButton" type="button">저장</button>
 			<div id="settingsMessage" class="message"></div>
 		</section>
@@ -286,6 +296,8 @@
 		const uploadMessageElement = System.document.getElementById("uploadMessage");
 		const portInputElement = System.document.getElementById("portInput");
 		const workspaceInputElement = System.document.getElementById("workspaceInput");
+		const allowBuildsInputElement = System.document.getElementById("allowBuildsInput");
+		const buildDisabledNoticeElement = System.document.getElementById("buildDisabledNotice");
 		const saveSettingsButtonElement = System.document.getElementById("saveSettingsButton");
 		const settingsMessageElement = System.document.getElementById("settingsMessage");
 		const logDecoder = new System.TextDecoder();
@@ -512,6 +524,8 @@
 			refreshing = true;
 			try {
 				const jobs = await fetchJson("/api/jobs");
+				const currentSettings = await fetchJson("/api/settings");
+				buildDisabledNoticeElement.hidden = currentSettings.allowBuilds;
 				if (selectedJobId === null) {
 					selectedJobId = pickDefaultJobId(jobs);
 				}
@@ -594,12 +608,14 @@
 			const settings = await fetchJson("/api/settings");
 			portInputElement.value = settings.port;
 			workspaceInputElement.value = settings.workspaceDir;
+			allowBuildsInputElement.checked = settings.allowBuilds;
 		}
 
 		async function saveSettings() {
 			const portText = portInputElement.value;
 			const workspaceText = workspaceInputElement.value;
-			const record = { port: System.Number(portText), workspaceDir: workspaceText };
+			const allowBuilds = allowBuildsInputElement.checked;
+			const record = { port: System.Number(portText), workspaceDir: workspaceText, allowBuilds: allowBuilds };
 			const previousPort = System.Number(System.location.port || 80);
 			try {
 				const response = await System.fetch("/api/settings", {
@@ -614,6 +630,7 @@
 				}
 				portInputElement.value = result.port;
 				workspaceInputElement.value = result.workspaceDir;
+				allowBuildsInputElement.checked = result.allowBuilds;
 				if (result.port !== previousPort) {
 					showMessage(settingsMessageElement, `저장했습니다. 포트가 바뀌어 ${result.port} 로 이동합니다.`, false);
 					const nextUrl = new System.URL(System.location.href);

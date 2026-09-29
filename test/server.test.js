@@ -87,6 +87,7 @@ async function startTestServer(builders) {
 	const homeDirectory = NodeFs.mkdtempSync(NodePath.join(NodeOs.tmpdir(), "vanilla-builder-home-"));
 	const settings = new Settings(homeDirectory);
 	settings.load();
+	settings.update({ allowBuilds: true });
 	const jobQueue = new JobQueue(settings, builders);
 	jobQueue.restore();
 	const httpServer = new HttpServer(0, jobQueue, PUBLIC_DIRECTORY);
@@ -416,7 +417,7 @@ test("설정은 조회와 변경이 되고 워크스페이스를 바꾸면 새 �
 	try {
 		const initialResult = await fetchJson(`${testServer.baseUrl}/api/settings`);
 		Assert.equal(initialResult.status, 200);
-		Assert.deepEqual(initialResult.body, { port: DEFAULT_PORT, workspaceDir: testServer.homeDirectory });
+		Assert.deepEqual(initialResult.body, { port: DEFAULT_PORT, workspaceDir: testServer.homeDirectory, allowBuilds: true });
 
 		const badResult = await putSettings(testServer.baseUrl, { port: 70000, workspaceDir: "relative/path" });
 		Assert.equal(badResult.status, 400);
@@ -445,6 +446,38 @@ test("설정은 조회와 변경이 되고 워크스페이스를 바꾸면 새 �
 	finally {
 		await stopTestServer(testServer);
 		NodeFs.rmSync(otherWorkspace, { recursive: true, force: true });
+	}
+});
+
+
+test("빌드 허용이 꺼져 있으면 업로드를 403 으로 거부하고, 기본값은 꺼짐이다", async () => {
+	const fake = createFakeBuilder(false);
+	const testServer = await startTestServer({ macos: fake.builder });
+	try {
+		const freshSettings = new Settings(NodeFs.mkdtempSync(NodePath.join(NodeOs.tmpdir(), "vanilla-builder-fresh-")));
+		Assert.equal(freshSettings.isBuildAllowed(), false, "기본값은 꺼짐");
+
+		const offResult = await putSettings(testServer.baseUrl, { allowBuilds: false });
+		Assert.equal(offResult.status, 200);
+		Assert.equal(offResult.body.allowBuilds, false);
+		const zipPath = await createProjectZip(VALID_SPEC, true);
+		const rejected = await postZip(testServer.baseUrl, zipPath, "");
+		Assert.equal(rejected.status, 403);
+		Assert.ok(rejected.body.errors[0].includes("빌드를 허용하지 않습니다"));
+		const listResult = await fetchJson(`${testServer.baseUrl}/api/jobs`);
+		Assert.deepEqual(listResult.body, []);
+
+		const badResult = await putSettings(testServer.baseUrl, { allowBuilds: "yes" });
+		Assert.equal(badResult.status, 400);
+
+		const onResult = await putSettings(testServer.baseUrl, { allowBuilds: true });
+		Assert.equal(onResult.body.allowBuilds, true);
+		const accepted = await postZip(testServer.baseUrl, zipPath, "");
+		Assert.equal(accepted.status, 201);
+		await waitForJob(testServer.baseUrl, accepted.body.id, isFinished);
+	}
+	finally {
+		await stopTestServer(testServer);
 	}
 });
 

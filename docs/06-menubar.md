@@ -21,6 +21,7 @@ Node.js 만으로는 메뉴 막대 아이콘을 만들 수 없다(네이티브 A
 - 5초마다 `http://localhost:<포트>/api/jobs` 를 읽어 대기/진행 중 수를 센다. 포트는 `~/.vanilla-builder/settings.json` 에서 읽는다(없으면 8686).
 - 메뉴 항목
   - 상태 한 줄: "서버 응답 없음" / "대기 N · 진행 중 M"
+  - **이 PC 에서 빌드 허용** (체크 항목, 기본 꺼짐). 설정 API 의 `allowBuilds` 를 토글한다. 꺼져 있으면 이 노드는 새 빌드를 받지 않는다.
   - 현황 페이지 열기 (기본 브라우저)
   - 서버 재시작 (`launchctl kickstart -k gui/<uid>/com.ddukbaek2.vanilla-builder`)
   - 종료 (서버와 메뉴 막대 아이콘을 모두 내린다. 다음 로그인이나 `install.sh` 로 다시 올라온다)

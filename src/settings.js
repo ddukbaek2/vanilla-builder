@@ -17,7 +17,7 @@ export const DEFAULT_PORT = 8686;
 //==============================================================================
 // 서버 설정. (홈 디렉토리의 settings.json)
 //
-// 웹 UI 에서 바꾸는 값은 모두 여기에 둔다. 항목은 포트와 워크스페이스 둘뿐이다.
+// 웹 UI 에서 바꾸는 값은 모두 여기에 둔다. 항목은 포트, 워크스페이스, 빌드 허용 여부다.
 // 파일이 없으면 기본값으로 시작하고, 저장할 때 만든다.
 //==============================================================================
 export class Settings {
@@ -27,6 +27,7 @@ export class Settings {
 	/** @private @type { string } */ #homeDirectory;
 	/** @private @type { number } */ #port;
 	/** @private @type { string } */ #workspaceDirectory;
+	/** @private @type { boolean } */ #allowBuilds;
 
 	//==============================================================================
 	// 생성.
@@ -38,6 +39,7 @@ export class Settings {
 		this.#homeDirectory = homeDirectory;
 		this.#port = DEFAULT_PORT;
 		this.#workspaceDirectory = homeDirectory;
+		this.#allowBuilds = false;
 	}
 
 	//==============================================================================
@@ -71,6 +73,16 @@ export class Settings {
 	}
 
 	//==============================================================================
+	// 이 PC 에서 빌드를 허용하는지. 기본은 꺼짐.
+	//==============================================================================
+	/**
+	 * @returns { boolean }
+	 */
+	isBuildAllowed() {
+		return this.#allowBuilds;
+	}
+
+	//==============================================================================
 	// settings.json 읽기. 없으면 기본값 그대로.
 	//==============================================================================
 	load() {
@@ -85,6 +97,9 @@ export class Settings {
 		}
 		if (typeof record.workspaceDir === "string" && record.workspaceDir !== "") {
 			this.#workspaceDirectory = record.workspaceDir;
+		}
+		if (typeof record.allowBuilds === "boolean") {
+			this.#allowBuilds = record.allowBuilds;
 		}
 	}
 
@@ -104,7 +119,7 @@ export class Settings {
 	// 통과하면 적용하고 저장한다. (포트 변경의 실제 반영은 HTTP 서버가 한다)
 	//==============================================================================
 	/**
-	 * @param { object } record { port?, workspaceDir? }
+	 * @param { object } record { port?, workspaceDir?, allowBuilds? }
 	 * @returns { string[] }
 	 */
 	update(record) {
@@ -156,11 +171,22 @@ export class Settings {
 			}
 		}
 
+		let nextAllowBuilds = this.#allowBuilds;
+		if (record.allowBuilds !== undefined) {
+			if (typeof record.allowBuilds !== "boolean") {
+				errors.push("allowBuilds 는 true 또는 false 여야 합니다.");
+			}
+			else {
+				nextAllowBuilds = record.allowBuilds;
+			}
+		}
+
 		if (errors.length > 0) {
 			return errors;
 		}
 		this.#port = nextPort;
 		this.#workspaceDirectory = nextWorkspaceDirectory;
+		this.#allowBuilds = nextAllowBuilds;
 		this.save();
 		return [];
 	}
@@ -175,6 +201,7 @@ export class Settings {
 		return {
 			port: this.#port,
 			workspaceDir: this.#workspaceDirectory,
+			allowBuilds: this.#allowBuilds,
 		};
 	}
 }

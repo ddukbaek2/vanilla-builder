@@ -277,7 +277,7 @@ export class HttpServer {
 	}
 
 	//==============================================================================
-	// 작업 생성. 본문(zip)을 임시 파일로 받아 큐에 넘긴다.
+	// 작업 생성. 본문(zip)을 임시 파일로 받아 큐에 넘긴다. 빌드 허용이 꺼져 있으면 403.
 	//==============================================================================
 	/**
 	 * @param { object } request
@@ -285,6 +285,12 @@ export class HttpServer {
 	 * @param { string | null } targetsQuery 쉼표로 구분된 플랫폼 목록
 	 */
 	async handleCreateJob(request, response, targetsQuery) {
+		const settings = this.#jobQueue.getSettings();
+		if (!settings.isBuildAllowed()) {
+			request.resume();
+			this.sendJson(response, 403, { errors: ["이 PC 는 빌드를 허용하지 않습니다. 설정(또는 메뉴 막대)에서 '이 PC 에서 빌드 허용' 을 켜세요."] });
+			return;
+		}
 		const zipPath = NodePath.join(NodeOs.tmpdir(), `vanilla-builder-${randomUUID()}.zip`);
 		try {
 			const zipStream = NodeFs.createWriteStream(zipPath);

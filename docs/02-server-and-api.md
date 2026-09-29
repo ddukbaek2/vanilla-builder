@@ -56,14 +56,14 @@
 
 | 메서드 | 경로 | 설명 |
 |---|---|---|
-| `POST` | `/api/jobs` | 본문은 zip 바이너리 그대로 (`Content-Type: application/zip`). 선택 쿼리 `?targets=macos,ios` 로 명세의 일부 대상만 빌드. 응답 `201 { "id": 12 }`. 명세 검증 실패 시 `400 { "errors": [...] }` |
+| `POST` | `/api/jobs` | 본문은 zip 바이너리 그대로 (`Content-Type: application/zip`). 선택 쿼리 `?targets=macos,ios` 로 명세의 일부 대상만 빌드. 응답 `201 { "id": 12 }`. 명세 검증 실패 시 `400 { "errors": [...] }`. 이 PC 의 빌드 허용이 꺼져 있으면 `403 { "errors": [...] }` |
 | `GET` | `/api/jobs` | 작업 목록 (최신순). 항목: `id`, `state`, `appId`, `appName`, `appVersion`, `targets`, `createdAt`, `startedAt`, `finishedAt` |
 | `GET` | `/api/jobs/:id` | 상세: 목록 항목 + 단계 목록과 각 상태, 산출물 목록, 오류 메시지 |
 | `GET` | `/api/jobs/:id/log` | `text/plain` 로그. `?offset=N` 이면 N 바이트 이후만 (현황 페이지 이어받기용) |
 | `POST` | `/api/jobs/:id/cancel` | 취소. 이미 끝난 작업이면 `409` |
 | `GET` | `/api/jobs/:id/artifacts/:filename` | 산출물 다운로드 |
-| `GET` | `/api/settings` | 설정 `{ "port": 8686, "workspaceDir": "..." }` |
-| `PUT` | `/api/settings` | 설정 변경. 본문 JSON `{ "port"?, "workspaceDir"? }`. 워크스페이스는 절대 경로(또는 `~/` 시작)여야 하고 없으면 만든다. 포트가 바뀌면 새 포트를 먼저 열어 보고 성공했을 때만 저장한 뒤 응답 후 옛 포트를 닫는다. 새 포트를 못 열면(사용 중 등) 설정을 되돌리고 `400`. 실패 시 `400 { "errors": [...] }` |
+| `GET` | `/api/settings` | 설정 `{ "port": 8686, "workspaceDir": "...", "allowBuilds": false }` |
+| `PUT` | `/api/settings` | 설정 변경. 본문 JSON `{ "port"?, "workspaceDir"?, "allowBuilds"? }`. 워크스페이스는 절대 경로(또는 `~/` 시작)여야 하고 없으면 만든다. 포트가 바뀌면 새 포트를 먼저 열어 보고 성공했을 때만 저장한 뒤 응답 후 옛 포트를 닫는다. 새 포트를 못 열면(사용 중 등) 설정을 되돌리고 `400`. 실패 시 `400 { "errors": [...] }` |
 | `GET` | `/` | 현황 페이지 |
 
 zip 을 본문으로 그대로 보내는 이유: multipart 파서 없이 내장 모듈만으로 받을 수 있고, 클라이언트도 한 줄이면 된다.
@@ -110,7 +110,7 @@ zip 전개는 macOS 내장 `unzip` 명령을 사용한다. (서버는 macOS 전�
 - 2초 간격 폴링 (`/api/jobs`, `/api/jobs/:id`, `/api/jobs/:id/log?offset=`). SSE/WebSocket 은 추후.
 
 **설정 화면**
-- 포트와 워크스페이스 디렉토리를 보여주고 바꿔 저장한다. 포트가 바뀌면 새 포트 주소로 이동한다.
+- 포트, 워크스페이스 디렉토리, "이 PC 에서 빌드 허용" 체크를 보여주고 바꿔 저장한다. 포트가 바뀌면 새 포트 주소로 이동한다. 빌드 허용이 꺼져 있으면 작업 화면 업로드 영역에 안내가 뜬다.
 
 **도움말 화면**
 - 업로드 방법(zip 구조, 명세 필드 요약, 웹 드롭과 curl), API 목록, 설정과 서비스 명령을 페이지 안에 정적으로 적는다.
@@ -137,6 +137,7 @@ zip 전개는 macOS 내장 `unzip` 명령을 사용한다. (서버는 macOS 전�
 |---|---|---|
 | `port` | `8686` | HTTP 포트. (8080 은 이 Mac 의 Jenkins 가 사용) |
 | `workspaceDir` | `~/.vanilla-builder` | 프로젝트 폴더가 만들어지는 곳 |
+| `allowBuilds` | `false` | 이 PC 에서 빌드를 허용하는지. 꺼져 있으면 새 업로드를 403 으로 거부한다(이미 큐에 있는 작업은 계속). 웹 설정과 메뉴 막대 둘 다에서 바꾼다. |
 
 ## 9. 모듈 구성 (구현됨)
 

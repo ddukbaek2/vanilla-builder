@@ -44,6 +44,7 @@ func readPort() -> Int {
 final class MenuBarController: NSObject {
 	private let statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
 	private let statusMenuItem = NSMenuItem(title: "확인 중...", action: nil, keyEquivalent: "")
+	private var allowBuildsMenuItem: NSMenuItem!
 	private var timer: Timer?
 
 	override init() {
@@ -60,6 +61,9 @@ final class MenuBarController: NSObject {
 		let menu = NSMenu()
 		statusMenuItem.isEnabled = false
 		menu.addItem(statusMenuItem)
+		menu.addItem(NSMenuItem.separator())
+		allowBuildsMenuItem = makeItem(title: "이 PC 에서 빌드 허용", action: #selector(toggleAllowBuilds))
+		menu.addItem(allowBuildsMenuItem)
 		menu.addItem(NSMenuItem.separator())
 		menu.addItem(makeItem(title: "현황 페이지 열기", action: #selector(openStatusPage)))
 		menu.addItem(makeItem(title: "서버 재시작", action: #selector(restartServer)))
@@ -101,6 +105,50 @@ final class MenuBarController: NSObject {
 			DispatchQueue.main.async {
 				self.statusMenuItem.title = statusText
 				self.statusItem.button?.alphaValue = alive ? 1.0 : 0.4
+			}
+		}
+		task.resume()
+		pollSettings(port: port)
+	}
+
+	//==============================================================================
+	// 빌드 허용 여부 조회. 메뉴 항목의 체크 표시를 맞춘다.
+	//==============================================================================
+	private func pollSettings(port: Int) {
+		guard let url = URL(string: "http://127.0.0.1:\(port)/api/settings") else {
+			return
+		}
+		var request = URLRequest(url: url)
+		request.timeoutInterval = 3
+		let task = URLSession.shared.dataTask(with: request) { data, _, error in
+			guard error == nil, let data = data, let record = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+				return
+			}
+			let allowed = (record["allowBuilds"] as? Bool) ?? false
+			DispatchQueue.main.async {
+				self.allowBuildsMenuItem.state = allowed ? .on : .off
+			}
+		}
+		task.resume()
+	}
+
+	//==============================================================================
+	// 빌드 허용 토글. 설정 API 에 저장한다.
+	//==============================================================================
+	@objc private func toggleAllowBuilds() {
+		let port = readPort()
+		let nextAllowed = allowBuildsMenuItem.state != .on
+		guard let url = URL(string: "http://127.0.0.1:\(port)/api/settings") else {
+			return
+		}
+		var request = URLRequest(url: url)
+		request.httpMethod = "PUT"
+		request.timeoutInterval = 3
+		request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+		request.httpBody = try? JSONSerialization.data(withJSONObject: ["allowBuilds": nextAllowed])
+		let task = URLSession.shared.dataTask(with: request) { _, _, _ in
+			DispatchQueue.main.async {
+				self.poll()
 			}
 		}
 		task.resume()
