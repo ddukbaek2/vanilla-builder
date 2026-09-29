@@ -22,6 +22,7 @@ publish/vanilla-builder/
 ```
 
 - macOS 배포판은 저장소에서 `node_modules`, `.env`, `.logs`, `artwork`(1024 원본은 포함), `.vscode`, `.claude` 를 뺀 zip 이다. 설치는 `sh scripts/install.sh` 한 번이다.
+- 톤: "Mac 서비스" 가 아니라 **원격 빌드 애플리케이션**으로 소개한다. 클라이언트는 어느 OS 든 되고, 빌드 서버는 현재 macOS 에서 제공하며, 대상 플랫폼 6종 중 지원/예정을 표로 보여 준다.
 - 페이지는 treenote 랜딩과 같은 톤(시스템 폰트, 밝은/어두운 모드 자동)에 바닐라 캐러멜 강조색을 쓴다. 내용: 소개, 스크린샷, 특징, 동작 방식, 설치 방법, 클라이언트, GitHub.
 
 ## 3. 갱신
